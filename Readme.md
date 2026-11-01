@@ -21,7 +21,7 @@ lession1: Implimentaion a minimal viable demo for learning about tools and their
     - a simple tool
     - call LLM
 
-lession2:
+lession2: Start learning from project https://github.com/liiiiiiiiil/coding-agent-from-scratch/. Finish the first version.
 
 lession3:
 
