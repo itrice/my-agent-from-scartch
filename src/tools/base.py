@@ -49,19 +49,19 @@ class ToolRegistry:
     """
 
     def __init__(self):
-        self.tools: dict[str, Tool] = {}
+        self._tools: dict[str, Tool] = {}
 
     def register(self, tool: Tool):
         """Register a tool."""
         if tool.name in self._tools:
             raise ValueError(f"Tool already exists: {tool.name}")
-        self.tools[tool.name] = tool
+        self._tools[tool.name] = tool
 
     def get(self, name: str) -> Tool:
         """Get a tool by name"""
-        if name not in self.tools:
+        if name not in self._tools:
             raise ValueError(f"Unknow tool: {name}")
-        return self.tools[name]
+        return self._tools[name]
 
     def list_tools(self):
         """List all registed tools"""
@@ -69,7 +69,7 @@ class ToolRegistry:
 
     def schema(self):
         """Get all tool's LLM Schema"""
-        return [tool.to_llm_scehma() for tool in self._tools.values()]
+        return [tool.to_llm_schema() for tool in self._tools.values()]
 
 # ===========
 # 3. Tool Executor
@@ -83,7 +83,7 @@ class ToolExecutor:
     def __init__(self, registry: ToolRegistry):
         self.registry = registry
 
-    def executor(self, name: str, arguments: dic):
+    def execute(self, name: str, arguments: dict):
         """Executor function by tool'name and parameters."""
         tool = self.registry.get(name)
 
