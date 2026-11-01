@@ -1,10 +1,11 @@
-from dotenv import load_dotenv
-
 import os
 import json
+
+from dotenv import load_dotenv
+from pathlib import Path
 from openai import OpenAI
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
 # ========== 0. 从环境变量读取配置 ==========
 api_key = os.getenv("OPENAI_API_KEY")
