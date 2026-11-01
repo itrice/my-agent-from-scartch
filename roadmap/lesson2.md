@@ -1,4 +1,4 @@
-## Lession 2
+## Lesson 2
 I watching and learning from coding agent from scartch project.
 
 https://github.com/liiiiiiiiil/coding-agent-from-scratch
@@ -14,5 +14,10 @@ Got many new knowledges.
 Fix issues that happen on my local:
 - Http request needs to use HTTPSConnection as my LLM url is based on SSL.
 
+
+### Run
+```bash
+python -m ./src
+```
 
 Next I plan to implement the next version v0.02.

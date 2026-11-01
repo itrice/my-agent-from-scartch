@@ -14,18 +14,17 @@ Develop everything in container.
 - git
 
 ## Roadmap
-lession1: Implimentaion a minimal viable demo for learning about tools and their initialization.
+lesson1: Implimentaion a minimal viable demo for learning about tools and their initialization.
     
     - one page code
     - new a client, send messages and response
     - a simple tool
     - call LLM
 
-lession2: Start learning from project https://github.com/liiiiiiiiil/coding-agent-from-scratch/. Finish the first version.
+lesson2: Start learning from project https://github.com/liiiiiiiiil/coding-agent-from-scratch/. Finish the first version.
 
-lession3:
+From this lesson, I refactored the project with a mainstream structure and built a simple chat loop.
 
-lession4:
 
 ======
 

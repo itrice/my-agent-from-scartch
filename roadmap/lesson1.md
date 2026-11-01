@@ -1,5 +1,11 @@
-### Lession 1. (lession1.py)
+### Lesson 1. (lesson1.py)
 .env file could include the environtment parameters. Useful.
+
+这里，我测试出了AI的幻觉。
+步骤：
+1. 先运行脚本，使用工具中已经存在的订单号。让LLM使用工具，并且给出答案。
+2. 我重新再次运行脚本，使用一个错误的订单号。LLM没有找到对应的数据，但是竟然记得我之前的正确单号，并且提示给出正确提示。
+3. 为了避免模型幻觉，我使用了系统约束。后来再次执行，模型没有给出“盲猜”建议。
 
 ```python
 TOOLS_SCHEMA [
@@ -72,3 +78,8 @@ client.chat.completions.create(   # 真正发请求给 LLM
 
 response.tool_calls               # 模型说“我要调工具”
 response.content                  # 或模型直接给最终答案
+
+### Run
+```bash
+python .src/single/lesson1.py
+```
