@@ -31,7 +31,7 @@ From this lesson, I refactored the project with a mainstream structure and built
 
 ## 从0搭建Agent，核心是构建一个 “LLM + 工具调用 + 循环控制” 的最小闭环。
 
-### Lession1
+### Lesson1
 
 LLM怎么会出现幻觉式建议呢
 这是个很好的问题，而且答案恰恰能帮你更准确地理解 LLM 的本质。
