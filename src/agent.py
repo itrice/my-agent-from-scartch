@@ -4,28 +4,21 @@ import os
 
 from tools import registry, executor
 from urllib.parse import urlparse
-from dotenv import load_dotenv
-
-load_dotenv()
-# === load value from env ===
-api_key = os.getenv("OPENAI_API_KEY")
-base_url = os.getenv("OPENAI_BASE_URL")  # 可选，不设置则用 OpenAI 官方
-model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # 可选，给个默认值
-max_iterations = int(os.getenv("MAX_ITERATIONS"))
+from config import BASE_URL, API_KEY, MODEL_NAME, MAX_ITERATIONS
 
 def call_llm(messages):
     """ none stream invoce LLM, retrun assistant message dict.
     using http.client + Accept-Encoding: identity avoid gateway 502.
     """
 
-    p = urlparse(base_url)
+    p = urlparse(BASE_URL)
     conn = http.client.HTTPSConnection(p.hostname, p.port or 443, timeout=120)
     body = json.dumps(
-        {"model": model_name, "messages": messages,"tools": registry.schema(),},
+        {"model": MODEL_NAME, "messages": messages,"tools": registry.schema(),},
         ensure_ascii=False,
     ).encode()
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",
         "Accept-Encoding": "identity",
     }
@@ -68,7 +61,7 @@ def agent_loop(messages):
     """Loop: Call LLM -> Print response -> No tool_calls end.
     The caller maintains and supports the messages, and current function only appends message.
     """
-    for i in range(max_iterations):
+    for i in range(MAX_ITERATIONS):
         msg = call_llm(messages)
         messages.append(msg)
 

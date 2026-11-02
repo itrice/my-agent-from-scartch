@@ -48,3 +48,17 @@ messages.append({
          
       **接口兼容性:**
         虽然 OpenAI 定义了 `system` / `user` / `assistant` / `tool` 的标准，但部分开源模型（如通过 vLLM 或 Ollama 部署时）可能仅严格支持前三种，对 `tool` 的支持取决于具体的推理框架版本。
+
+6. os.path.join("src", "/data", "file.txt")
+   
+   --> "/data/file.txt" 为什么？因为 "/data" 带了前导斜杠，Python 会极其死板地认为这就是一个绝对路径的开头。于是它毫不留情地把前面的 "src" 丢掉了。
+
+7. 在 Python 里，__name__ 是一个内置变量。它的值取决于文件是怎么被执行起来的：
+
+   直接运行（比如你在终端敲 python app.py，或者在 VS Code 里点击了“运行”按钮）：
+此时 Python 会把当前文件的 __name__ 自动设为 "__main__"。
+👉 所以 if "__main__" == "__main__": 条件成立，下面的代码会被执行。
+
+   被导入（比如在另一个文件里写了 import app）：
+此时 Python 会把被导入的 app.py 里的 __name__ 设为它的模块名（也就是 "app"）。
+👉 所以 if "app" == "__main__": 条件不成立，下面的代码会被跳过。
