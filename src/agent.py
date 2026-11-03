@@ -86,11 +86,21 @@ def call_llm(messages):
 
 
 def agent_loop(messages):
-    """Call the LLM repeatedly, execute and feed back tool calls, and stop when there are none.
+    """循环：调 LLM -> 有 tool_calls 就执行并回灌 -> 无则结束。
 
-    The caller maintains and reuses messages across turns; this function only appends to it.
+    【messages 契约】本函数以副作用方式向传入的 messages 列表追加内容，
+    调用方应跨轮复用同一个 list 对象，不要重新构造。每轮会 append：
+      1. assistant 消息（含 content 和/或 tool_calls）
+      2. 若有 tool_calls：对应每条的 role=tool 结果消息
+    返回值是最终 assistant 回复的 content 字符串（仅用于打印），
+    真正的上下文状态已写入 messages，调用方无需再手动 append assistant 回复。
+
+    注意：若因达到 MAX_ITERATIONS 提前返回，messages 可能停在
+    "有 tool_calls 但无对应 tool 结果"的半截状态，下一轮调用前
+    调用方有责任处理该状态（当前实现未做清理，长任务可能触发协议错误）。
     """
     for i in range(MAX_ITERATIONS):
+        print(f"\n=== [{i+1}] LLM 回复 ===")
         msg = call_llm(messages)
         messages.append(msg)
 

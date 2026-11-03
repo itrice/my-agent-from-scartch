@@ -30,3 +30,7 @@ Lesson3: First tool
 Lesson4: File read\write tool + Permisson Gate
 
 Lesson5: Streaming Mode
+
+Lesson6: 并发ToolCall
+
+Lesson7: 系统提示词工程化
