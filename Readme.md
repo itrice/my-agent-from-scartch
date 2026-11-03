@@ -29,4 +29,4 @@ Lesson3: First tool
 
 Lesson4: File read\write tool + Permisson Gate
 
-Lesson5: Streaming
+Lesson5: Streaming Mode
