@@ -27,8 +27,6 @@ From this lesson, I refactored the project with a mainstream structure and built
 
 Lesson3: First tool
 
-Lesson4: File read\write tool
+Lesson4: File read\write tool + Permisson Gate
 
-Lesson5: Permisson Gate
-
-Lesson6: Streaming
+Lesson5: Streaming
