@@ -1,6 +1,6 @@
-""" Define tool, registry center, executor
-Lesson3: No permisson gate.
-Executor call handler directly, catch exception to LLM.
+"""Define tools, a registry, and an executor.
+
+The executor checks permissions before calling a handler and returns handler errors as strings.
 """
 
 from dataclasses import dataclass
@@ -14,11 +14,12 @@ from tools.permission import PermissionGate
 
 @dataclass
 class Tool:
-    """A full tool definiation
-    name        : tool's name for LLM
-    description : tool's description for LLM
-    parameters  : tool's parameters for LLM
-    handler     : Realtime executing python function
+    """A complete tool definition.
+
+    name        : Name exposed to the LLM.
+    description : Description exposed to the LLM.
+    parameters  : Parameter schema exposed to the LLM.
+    handler     : Python callable invoked to execute the tool.
     """
     name: str
     description: str
@@ -26,7 +27,7 @@ class Tool:
     handler: Callable[..., Any]
 
     def to_llm_schema(self):
-        """Transform into OpenAI function calling format"""
+        """Convert this tool to the OpenAI function-calling format."""
         return {
             "type": "function",
             "function": {
@@ -40,15 +41,7 @@ class Tool:
 # Tool registry
 # ======================
 class ToolRegistry:
-    """
-    Tool Registry Center
-    
-    Responsibilities:
-    1. Register tools
-    2. Look up a tool by name
-    3. Get all tools
-    4. Generate tool schema for LLM
-    """
+    """Registry for registering, looking up, and listing tools and their LLM schemas."""
 
     def __init__(self):
         self._tools: dict[str, Tool] = {}
@@ -60,17 +53,17 @@ class ToolRegistry:
         self._tools[tool.name] = tool
 
     def get(self, name: str) -> Tool:
-        """Get a tool by name"""
+        """Get a tool by name."""
         if name not in self._tools:
-            raise ValueError(f"Unknow tool: {name}")
+            raise ValueError(f"Unknown tool: {name}")
         return self._tools[name]
 
     def list_tools(self):
-        """List all registed tools"""
+        """List all registered tools."""
         return list(self._tools.values())
 
     def schema(self):
-        """Get all tool's LLM Schema"""
+        """Return the LLM schemas for all registered tools."""
         return [tool.to_llm_schema() for tool in self._tools.values()]
 
 # ===========
@@ -78,16 +71,13 @@ class ToolRegistry:
 # ===========
 
 class ToolExecutor:
-    """Tool Executor
-    Registry find tool
-    Executor run tool    
-    """
+    """Look up tools, check permissions, and execute their handlers."""
     def __init__(self, registry: ToolRegistry, gate: PermissionGate | None = None):
         self.registry = registry
         self.gate = gate or PermissionGate()
 
     def execute(self, name: str, arguments: dict):
-        """Executor function by tool'name and parameters."""
+        """Execute a named tool with the supplied arguments."""
         tool = self.registry.get(name)
         # Permission Gate
         denied = self.gate.guard(name, arguments)

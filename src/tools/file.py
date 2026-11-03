@@ -1,16 +1,16 @@
-"""read_file / write_file 工具：读写文本文件。"""
+"""read_file / write_file tools for reading and writing text files."""
 
 from tools.base import Tool
 
 
 def read_file(path: str):
-    """Read context from a file."""
+    """Read and return the text content of a file."""
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 def write_file(path: str, content: str):
-    """Write context into a file."""
+    """Write text content to a file."""
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
     return f"Already write into file: {path}"

@@ -7,10 +7,10 @@ from openai import OpenAI
 
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-# ========== 0. 从环境变量读取配置 ==========
+# ========== 0. Load configuration from environment variables ==========
 api_key = os.getenv("OPENAI_API_KEY")
-base_url = os.getenv("OPENAI_BASE_URL")  # 可选，不设置则用 OpenAI 官方
-model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # 可选，给个默认值
+base_url = os.getenv("OPENAI_BASE_URL")  # Optional; defaults to the official OpenAI endpoint.
+model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # Optional; uses a default model.
 
 if not api_key:
     raise RuntimeError("未找到环境变量 OPENAI_API_KEY，请先设置它。")
@@ -20,22 +20,22 @@ client = OpenAI(
     base_url=base_url,  # 如果为 None，openai SDK 会自动用官方地址
 )
 
-# ========== 1. 工具函数 ==========
+# ========== 1. Tool functions ==========
 def get_order_status(order_id: str) -> str:
-    """查询订单状态。当用户询问某个订单的物流/发货情况时使用。"""
+    """Look up an order's status when the user asks about its shipping or delivery."""
     db = {"4471": "已发货，UPS承运，预计2天送达"}
     return db.get(order_id, "未找到该订单")
 
 
 def calculate(expression: str) -> str:
-    """计算数学表达式。当用户需要做算术运算时使用。"""
+    """Evaluate a mathematical expression when the user asks for arithmetic."""
     try:
         return str(eval(expression, {"__builtins__": {}}, {}))
     except Exception as e:
         return f"计算失败: {e}"
 
 
-# ========== 2. 工具 schema ==========
+# ========== 2. Tool schema ==========
 TOOLS_SCHEMA = [
     {
         "type": "function",
@@ -83,14 +83,14 @@ def execute_tool(name: str, args: dict) -> str:
 def run_agent(input: str):
     turns = 0
     messages = [
-        {"role": "system", "content": "你只能依据工具返回的结果回答。如果工具说未找到，就如实告知用户未找到，不要猜测或举例其他订单号。"}, #明确约束
+        {"role": "system", "content": "你只能依据工具返回的结果回答。如果工具说未找到，就如实告知用户未找到，不要猜测或举例其他订单号。"}, # Explicit constraint.
         {"role": "user", "content": input}]
 
     MAX_TURNS = 5
     while turns < MAX_TURNS:
         turns += 1
         print("===send to LLM===\n", messages)
-        # 1. 真正调用 LLM
+        # 1. Make the actual LLM call.
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
@@ -121,7 +121,7 @@ def run_agent(input: str):
         print("达到最大轮数，结束对话。")
 
 
-# ========== 3. 测试 ==========
+# ========== 3. Tests ==========
 if __name__ == "__main__":
     print("当前 model:", model_name)
     print("当前 base_url:", base_url or "(OpenAI 官方默认)")

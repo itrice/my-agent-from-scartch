@@ -1,7 +1,8 @@
-"""Smoke test for agent lesson3.
-Validate import chains and function signatures without actually calling the LLM (to avoid network dependencies).
-Run independently: `python tests/test_loop.py'
-(Zero third-party dependences, standard library only.)
+"""Smoke tests for the lesson 3 agent.
+
+Validate imports and function signatures without calling the LLM or requiring network access.
+Run independently with `python tests/test_loop.py`.
+This test uses only the Python standard library.
 """
 
 import os

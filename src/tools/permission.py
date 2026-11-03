@@ -1,18 +1,17 @@
-"""权限策略：tool 执行前的三态闸门（allow/deny/ask）。
-Permisson policy: three-state gate for pre-execution chec_ask_lock 是互斥锁，用来保证同一时间只有一个线程执行需要用户输入的权限确认。k of tools (allow, deny, ask)
+"""Permission policy: a three-state gate (allow/deny/ask) before tool execution.
+
+The ask lock ensures that only one thread at a time prompts the user for confirmation.
 """
 import threading
 
 # ============================================================
-# 1. 动作常量
 # 1. Action constants
 # ============================================================
 
 ALLOW, DENY, ASK = "allow", "deny", "ask"
 
 # ============================================================
-# 2. 权限规则配置（硬编码，与 config.py 的风格一致）
-# 2. Permission rule configuration (hard-code, consistent with tye style of config.py)
+# 2. Permission rules (hard-coded, consistent with the style of config.py)
 # ============================================================
 
 PERMISSION_RULES = {
@@ -26,14 +25,12 @@ PERMISSION_RULES = {
 # ============================================================
 class PermissionPolicy:
     """
-    一维权限策略：tool_name -> action。    
-    留 args 参数口子，以后升到 (tool_name, pattern) 二维。
-    1D permission policy: tool_name -> action.
-    Reserve args slot for future 2D (tool_name, pattern).
+    One-dimensional permission policy: tool_name -> action.
+    Keep args available for a future two-dimensional policy: (tool_name, pattern).
     """
     def __init__(self, rules: dict | None = None):
         self.rules = rules if rules is not None else PERMISSION_RULES
-        self._approved = set() #运行时"本轮已批准"的工具名, Tool names approved in this round (runtime)
+        self._approved = set()  # Tool names approved for this policy instance.
 
     def check(self, tool_name: str, args: dict | None = None) -> str:
         action = self.rules.get(tool_name, ALLOW)
@@ -48,16 +45,16 @@ class PermissionPolicy:
         return ALLOW
 
     def approve(self, tool_name: str):
-        """ when user choose 'always', flag current round always approve."""
+        """Remember approval for this tool for the lifetime of this policy instance."""
         self._approved.add(tool_name)
 
 # ============================================================
-# 4. PermissionGate —— Executor 调用的闸门入口
+# 4. PermissionGate: the gate called by the executor
 # ============================================================
 class PermissionGate:
     """
-    封装"检查 + 交互 + Lock"。
-    Executor 只需调 gate.guard(name, args)，返回 None=放行 / str=拒绝原因。
+    Encapsulate the check, user interaction, and lock.
+    The executor calls gate.guard(name, args), which returns None to allow or a string with the rejection reason.
     """
     def __init__(self, policy: PermissionPolicy | None = None):
         self.policy = policy or PermissionPolicy()
@@ -65,7 +62,7 @@ class PermissionGate:
 
     def guard(self, tool_name: str, args: dict) -> str | None:
         """
-        返回 None 表示放行，返回 str 表示拒绝原因。
+        Return None to allow execution, or a string with the rejection reason.
         """
         action = self.policy.check(tool_name, args)
 

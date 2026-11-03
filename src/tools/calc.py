@@ -1,10 +1,10 @@
-"""Calculate tool: Calculate math expression"""
+"""Tool for evaluating arithmetic expressions."""
 import re
 from tools.base import Tool
 
 
 def calculate(expression: str):
-    """Calcuate a math expression"""
+    """Evaluate an arithmetic expression."""
     if not re.fullmatch(r"[\d\s+\-*/().]+", expression):
         raise ValueError("Incorrect expression!")
     return str(eval(expression))

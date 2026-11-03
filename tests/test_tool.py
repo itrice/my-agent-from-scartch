@@ -1,7 +1,7 @@
-"""Smoke test for mini_agent v0.3 tools.
+"""Smoke tests for mini_agent v0.3 tools.
 
-验证 Tool/ToolRegistry/ToolExecutor + calculate/read_file/write_file。
-可独立运行：python tests/test_tools.py
+Validate Tool/ToolRegistry/ToolExecutor and calculate/read_file/write_file.
+Run independently with: python tests/test_tools.py
 """
 
 import os, sys, tempfile
@@ -29,7 +29,7 @@ def test_calculate_invalid():
 
 def test_read_file():
     content = "test string"
-    # with a tempfile
+    # Use a temporary file.
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8", delete=True) as temp_file:
         temp_file.write(content)
         temp_file.flush()
@@ -66,7 +66,7 @@ def test_executor_unknow():
     print("PASS: executor thorw exception with unknow tool")
 
 def test_permission_deny():
-    # DENY policy: write_file reject
+    # Verify that a DENY policy rejects write_file.
     gate = PermissionGate(PermissionPolicy({"write_file": DENY}))
     exec_deny = ToolExecutor(registry, gate=gate)
     result = exec_deny.execute("write_file", {"path": "/tmp/x.txt", "context": "X"})

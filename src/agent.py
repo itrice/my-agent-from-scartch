@@ -1,19 +1,20 @@
-"""带工具的 Agent Loop（流式）：调 LLM -> 若要工具则执行 -> 结果回灌 -> 再调，循环到纯文本回复或上限。"""
+"""Streaming agent loop: call the LLM, execute tools if requested, feed results back, and repeat until a text response or the iteration limit."""
 
 import http.client
 import json
 import os
 
+from concurrent.futures import ThreadPoolExecutor
 from tools import registry, executor
 from urllib.parse import urlparse
 from config import BASE_URL, API_KEY, MODEL_NAME, MAX_ITERATIONS
 
 
 def call_llm(messages):
-    """流式调用 LLM。逐 chunk 累积，返回与非流式格式一致的 message dict。
+    """Call the LLM in streaming mode, accumulate chunks, and return a message dict matching the non-streaming format.
 
-    用 http.client + Accept-Encoding: identity 绕过网关 502。
-    content 边收边 print（打字机效果），tool_calls 的 arguments 跨 chunk 拼接。
+    Send Accept-Encoding: identity to avoid gateway issues with compressed responses.
+    Print content as it arrives (typewriter effect) and concatenate tool-call arguments across chunks.
     """
 
     p = urlparse(BASE_URL)
@@ -48,20 +49,20 @@ def call_llm(messages):
             continue
         delta = choices[0].get("delta", [])
 
-        # content 边收边打印（打字机效果
+        # Print content as it arrives (typewriter effect).
         #
         # {"delta": {"role": "assistant"}}
-        # {"delta": {"content": "你好"}}
-        # {"delta": {"content": "，世界！"}}
+        # {"delta": {"content": "Hello"}}
+        # {"delta": {"content": ", world!"}}
         #
         if delta.get("content"):
             content_parts.append(delta["content"])
             print(delta["content"], end="", flush=True)
 
-        # tool_calls 的 arguments 跨 chunk 拼接
+        # Concatenate tool-call arguments across chunks.
         for tc in delta.get("tool_calls", []):
             idx = tc.get("index", 0)
-            # slot 是 tool_calls_acc[idx] 对应字典的引用，后面通过它更新这条工具调用的信息：
+            # slot references tool_calls_acc[idx] and is used below to update this tool call.
             slot = tool_calls_acc.setdefault(idx, {
                 "id": "", "type": "function",
                 "function": {"name": "", "arguments": ""},
@@ -76,38 +77,49 @@ def call_llm(messages):
 
     conn.close()
     message = {"role": "assistant",
-            "content": "".join(content_parts) or None}
+               "content": "".join(content_parts) or None}
     if tool_calls_acc:
         message["tool_calls"] = [
             tool_calls_acc[i] for i in sorted(tool_calls_acc)
         ]
     return message
 
-def agent_loop(messages):
-    """循环：调 LLM -> 有 tool_calls 就执行并回灌 -> 无则结束。
 
-    messages 由调用方维护并跨轮复用，本函数只往里 append。
+def agent_loop(messages):
+    """Call the LLM repeatedly, execute and feed back tool calls, and stop when there are none.
+
+    The caller maintains and reuses messages across turns; this function only appends to it.
     """
     for i in range(MAX_ITERATIONS):
         msg = call_llm(messages)
         messages.append(msg)
-        
+
         for tc in msg.get("tool_calls", []):
-            print(f"  决策调用: {tc['function']['name']}({tc['function']['arguments']})")
-        # no tool_calls = response's finally, over.
+            print(
+                f"  决策调用: {tc['function']['name']}({tc['function']['arguments']})")
+        # No tool calls means the LLM response is final.
         if not msg.get("tool_calls"):
             return msg.get("content", "")
 
-        for tc in msg["tool_calls"]:
+        # Run this round's tool calls concurrently; pool.map preserves their original order.
+        # Feed the results back as role=tool messages.
+        tool_calls = msg["tool_calls"]
+
+        def _run(tc):
             name = tc["function"]["name"]
             args = json.loads(tc["function"]["arguments"])
-
             result = executor.execute(name, args)
             print(f" Execute Result:{name}({args})")
+            return tc["id"], str(result)
+
+        with ThreadPoolExecutor(max_workers=len(tool_calls)) as pool:
+            results = list(pool.map(_run, tool_calls))
+
+        for tc_id, content in results:
             messages.append({
                 "role": "tool",
-                "tool_call_id": tc["id"],
-                "content": str(result),
+                "tool_call_id": tc_id,
+                "content": content,
             })
 
     return "Reach the maximum number of iterations"
