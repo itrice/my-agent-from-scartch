@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__),"..","src"))
 
 from tools import registry, executor
 from tools.base import ToolRegistry, Tool, ToolExecutor
+from tools.permission import ALLOW, DENY, ASK, PermissionPolicy, PermissionGate
 
 def test_registry():
     names = [t.name for t in registry.list_tools()]
@@ -64,10 +65,19 @@ def test_executor_unknow():
         pass
     print("PASS: executor thorw exception with unknow tool")
 
+def test_permission_deny():
+    # DENY policy: write_file reject
+    gate = PermissionGate(PermissionPolicy({"write_file": DENY}))
+    exec_deny = ToolExecutor(registry, gate=gate)
+    result = exec_deny.execute("write_file", {"path": "/tmp/x.txt", "context": "X"})
+    assert "Permission reject" in result, result
+    print("PASS: write_file rejected by DENY policy")
+
 if __name__ == "__main__":
     test_calculate()
     test_calculate_invalid()
-    # test_read_file()
-    # test_write_file()
+    test_read_file()
+    #test_write_file()
     test_registry_duplicate()
     test_executor_unknow()
+    # test_permission_deny()

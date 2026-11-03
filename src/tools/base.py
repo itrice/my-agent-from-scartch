@@ -6,6 +6,8 @@ Executor call handler directly, catch exception to LLM.
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from tools.permission import PermissionGate
+
 # ==========================
 # 1. Tool Definition
 # ==========================
@@ -80,13 +82,19 @@ class ToolExecutor:
     Registry find tool
     Executor run tool    
     """
-    def __init__(self, registry: ToolRegistry):
+    def __init__(self, registry: ToolRegistry, gate: PermissionGate | None = None):
         self.registry = registry
+        self.gate = gate or PermissionGate()
 
     def execute(self, name: str, arguments: dict):
         """Executor function by tool'name and parameters."""
         tool = self.registry.get(name)
-
+        # Permission Gate
+        denied = self.gate.guard(name, arguments)
+        if denied:
+            print(f"[Permission] {denied}")
+            return denied
+        
         print(f"[Executor] run Tool:{name}")
         print(f"[Executor] parameters: {arguments}")
 
