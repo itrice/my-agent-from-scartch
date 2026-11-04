@@ -18,16 +18,22 @@ PERMISSION_RULES = {
     "read_file": ALLOW,
     "calculate": ALLOW,
     "write_file": ASK,
+    "edit_file": ASK,
+    "grep": ALLOW,
+    "list_dir": ALLOW,
 }
 
 # ============================================================
 # 3. PermissionPolicy
 # ============================================================
+
+
 class PermissionPolicy:
     """
     One-dimensional permission policy: tool_name -> action.
     Keep args available for a future two-dimensional policy: (tool_name, pattern).
     """
+
     def __init__(self, rules: dict | None = None):
         self.rules = rules if rules is not None else PERMISSION_RULES
         self._approved = set()  # Tool names approved for this policy instance.
@@ -51,11 +57,14 @@ class PermissionPolicy:
 # ============================================================
 # 4. PermissionGate: the gate called by the executor
 # ============================================================
+
+
 class PermissionGate:
     """
     Encapsulate the check, user interaction, and lock.
     The executor calls gate.guard(name, args), which returns None to allow or a string with the rejection reason.
     """
+
     def __init__(self, policy: PermissionPolicy | None = None):
         self.policy = policy or PermissionPolicy()
         self._ask_lock = threading.Lock()

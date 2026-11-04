@@ -92,4 +92,5 @@ class ToolExecutor:
             result = tool.handler(**arguments)
         except Exception as e:
             return f"Tool execute failed: {e}"
+
         return result

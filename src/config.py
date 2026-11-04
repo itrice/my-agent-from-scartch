@@ -3,6 +3,10 @@ import os
 
 from dotenv import load_dotenv
 
+MAX_FILE_ENTRIES = 200
+MAX_GREP_ENTRIES = 100
+MAX_FILE_READ_LIMIT = 2000
+
 load_dotenv()
 
 # === load value from env ===

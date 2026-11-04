@@ -3,6 +3,7 @@
 Validate Tool/ToolRegistry/ToolExecutor and calculate/read_file/write_file.
 Run independently with: python tests/test_tools.py
 """
+
 import os
 import sys
 import tempfile
@@ -12,9 +13,8 @@ from tools.permission import ALLOW, DENY, ASK, PermissionPolicy, PermissionGate
 from tools.base import ToolRegistry, Tool, ToolExecutor
 from tools import registry, executor
 
-
-
 ENCODING = "utf-8"
+
 
 def test_registry():
     names = [t.name for t in registry.list_tools()]
@@ -49,9 +49,9 @@ def test_read_file():
 def test_write_file():
     test_executor = ToolExecutor(
         registry,
-        gate=PermissionGate(PermissionPolicy({"write_file":ALLOW})),                               
+        gate=PermissionGate(PermissionPolicy({"write_file": ALLOW})),
     )
-    
+
     with tempfile.TemporaryDirectory() as tmp:
         target = os.path.join(tmp, "out.txt")
         result = test_executor.execute(
@@ -88,9 +88,98 @@ def test_permission_deny():
     exec_deny = ToolExecutor(registry, gate=gate)
     result = exec_deny.execute(
         "write_file", {"path": "/tmp/x.txt", "context": "X"})
-    assert "Permission reject" in result, result
+    assert "not allow" in result, result
     print("PASS: write_file rejected by DENY policy")
 
+
+def test_read_file_offset_limit():
+    # 写一个 5 行临时文件，测 offset/limit
+    gate = PermissionGate(PermissionPolicy({
+        "write_file": ALLOW
+    }))
+    exec_allow = ToolExecutor(registry, gate)
+    with tempfile.TemporaryDirectory() as tmp:
+        target = os.path.join(tmp, "test.txt")
+        exec_allow.execute("write_file", {"path": target, "content": "L0\nL1\nL2\nL3\nL4\n\L5\L6"})
+        result = executor.execute(
+            "read_file", {"path": target, "offset": 1, "limit": 2})
+        print(result)
+        assert "L1" in result and "L2" in result, result
+        assert "L0" not in result, f"offset 未生效: {result}"
+        assert "L3" not in result, f"limit 未生效: {result}"
+        assert "还有" in result, f"未提示剩余行: {result}"
+        print("PASS: read_file offset/limit 分段读取生效")
+
+def test_edit_file():
+    excute_allow = ToolExecutor(registry,
+                               PermissionGate(PermissionPolicy({"write_file": ALLOW,"edit_file": ALLOW}))) 
+    with tempfile.TemporaryDirectory() as tmp:
+        target = os.path.join(tmp, "edit.txt")
+        excute_allow.execute("write_file", {"path": target, "content": "hello world\nfoo bar\n"})
+        # 精确替换单处
+        result = excute_allow.execute("edit_file", {
+            "path":target, "old_string":"foo bar","new_string":"Qianqian",
+        })
+        print(f"替换结果：{result}")
+        assert "已替换 1 处" in result, result
+        with open(target, "r", encoding=ENCODING) as f:
+            assert "Qianqian" in f.read()
+
+    print("PASS: edit_file 精确替换单处成功")
+
+def test_edit_file_no_match():
+    gate = PermissionGate(PermissionPolicy({"write_file": ALLOW, "edit_file": ALLOW}))
+    exec_allow = ToolExecutor(registry, gate=gate)
+    with tempfile.TemporaryDirectory() as tmp:
+        target = os.path.join(tmp, "nomatch.txt")
+        exec_allow.execute("write_file", {"path": target, "content": "abc\n"})
+        result = exec_allow.execute("edit_file", {
+            "path": target, "old_string": "xyz", "new_string": "123",
+        })
+        assert "not found" in result.lower(), result
+    print("PASS: edit_file 无匹配时报错")
+
+def test_edit_file_multi_match():
+    gate = PermissionGate(PermissionPolicy({"write_file": ALLOW, "edit_file": ALLOW}))
+    exec_allow = ToolExecutor(registry, gate=gate)
+    with tempfile.TemporaryDirectory() as tmp:
+        target = os.path.join(tmp, "multi.txt")
+        exec_allow.execute("write_file", {"path": target, "content": "foo\nfoo\nfoo\n"})
+        # 多匹配不传 replace_all → 应报错
+        result = exec_allow.execute("edit_file", {
+            "path": target, "old_string": "foo", "new_string": "bar",
+        })
+        assert "找到" in result and "3 处" in result, result
+        # 多匹配传 replace_all=true → 应全部替换
+        result = exec_allow.execute("edit_file", {
+            "path": target, "old_string": "foo", "new_string": "bar", "replace_all": True,
+        })
+        assert "已替换 3 处" in result, result
+        with open(target, "r", encoding=ENCODING) as f:
+            content = f.read()
+            assert "foo" not in content
+            assert content.count("bar") == 3
+    print("PASS: edit_file 多匹配安全检查 + replace_all 生效")
+
+def test_list_dir():
+    lessons = os.path.join(os.path.dirname(__file__), "..", "roadmap")
+    result = executor.execute("list_dir", {"path": lessons})
+    assert "lesson1.md" in result, result
+    print("PASS: list_dir 列出 roadmap 目录成功")
+
+def test_grep():
+    lessons = os.path.join(os.path.dirname(__file__), "..", "roadmap")
+    result = executor.execute("grep", {"pattern": r"lesson", "path": lessons})
+    
+    assert "lesson1.md" in result and "lesson" in result, result
+    print("PASS: grep 搜索 lessons 目录成功")
+
+
+def test_grep_no_match():
+    lessons = os.path.join(os.path.dirname(__file__), "..", "roadmap")
+    result = executor.execute("grep", {"pattern": "ZZZ_NOT_EXIST", "path": lessons})
+    assert "无匹配" in result, result
+    print("PASS: grep 无匹配时返回提示")
 
 if __name__ == "__main__":
     test_calculate()
@@ -99,4 +188,11 @@ if __name__ == "__main__":
     test_write_file()
     test_registry_duplicate()
     test_executor_unknow()
-    # test_permission_deny()
+    test_permission_deny()
+    test_read_file_offset_limit()
+    test_edit_file()
+    test_edit_file_no_match()
+    test_edit_file_multi_match()
+    test_list_dir()
+    test_grep()
+    test_grep_no_match()
