@@ -34,3 +34,8 @@ Lesson5: Streaming Mode
 Lesson6: 并发ToolCall
 
 Lesson7: 系统提示词工程化
+
+Lesson9:
+```python
+raise ValueError(f"不支持的权限规则格式: {key}={value!r}")
+```

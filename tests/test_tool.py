@@ -9,7 +9,7 @@ import sys
 import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from tools.permission import ALLOW, DENY, ASK, PermissionPolicy, PermissionGate
+from permission import ALLOW, DENY, ASK, PermissionPolicy, PermissionGate
 from tools.base import ToolRegistry, Tool, ToolExecutor
 from tools import registry, executor
 
@@ -30,7 +30,7 @@ def test_calculate():
 
 def test_calculate_invalid():
     result = executor.execute("calculate", {"expression": "import os"})
-    assert "failed" in result, result
+    assert "failed" in result or "失败" in result, result
     print("PASS: calculate rejects illegal characters")
 
 
@@ -56,7 +56,7 @@ def test_write_file():
         target = os.path.join(tmp, "out.txt")
         result = test_executor.execute(
             "write_file", {"path": target, "content": "Hi"})
-        assert "succeed" in result.lower(), result
+        assert "succeed" in result.lower() or "成功" in result, result
         with open(target, "r", encoding=ENCODING) as f:
             assert f.read() == "Hi"
     print("PASS: wirite_file succeed")
@@ -181,6 +181,62 @@ def test_grep_no_match():
     assert "无匹配" in result, result
     print("PASS: grep 无匹配时返回提示")
 
+# lesson9
+def test_permission_deny():
+    # DENY 策略：write_file 被拒绝
+    gate = PermissionGate(PermissionPolicy({"write_file": DENY}))
+    exec_deny = ToolExecutor(registry, gate=gate)
+    result = exec_deny.execute("write_file", {"path": "/tmp/x.txt", "content": "x"})    
+    assert "Reject" in result or "权限拒绝" in result, result
+    print("PASS: write_file 被 DENY 策略拒绝")
+
+# lesson9
+def test_permission_pattern_allow():
+    """二维权限：特定 pattern allow 覆盖默认 ask"""
+    # 规则按顺序匹配，后出现的优先级更高（findLast 语义）
+    # 所以通配 * 放前面，具体 *.txt 放后面覆盖
+    policy = PermissionPolicy({"write_file": {"*": "", "*.txt": "allow"}})
+    gate = PermissionGate(policy)
+    exec_test = ToolExecutor(registry, gate=gate)
+    with tempfile.TemporaryDirectory() as tmp:
+        target = os.path.join(tmp, "test.txt")
+        result = exec_test.execute("write_file", {"path": target, "content": "ok"})
+        assert "Succeed" in result, result
+    print("PASS: 二维权限 *.txt allow 覆盖默认 ask")
+
+# lesson9
+def test_permission_pattern_deny():
+    """二维权限：特定 pattern deny 覆盖默认 allow"""
+    # 通配 * 放前面，具体 *.env 放后面覆盖
+    policy = PermissionPolicy({"read_file": {"*": "allow", "*.env": "deny"}})
+    gate = PermissionGate(policy)
+    exec_test = ToolExecutor(registry, gate=gate)
+    with tempfile.TemporaryDirectory() as tmp:
+        target = os.path.join(tmp, "secret.env")
+        with open(target, "w", encoding="utf-8") as f:
+            f.write("SECRET=xxx")
+        result = exec_test.execute("read_file", {"path": target})
+        assert "Reject" in result or "权限拒绝" in result, result
+    print("PASS: 二维权限 *.env deny 覆盖默认 allow")
+
+# lesson9
+def test_permission_always_pattern():
+    """always 回复存 pattern，同类免问"""
+    policy = PermissionPolicy({"write_file": "ASK"})
+    policy.approve("write_file", "*.txt")
+    assert policy.check("write_file", "test.txt") == ALLOW, "approved *.txt 应放行"
+    assert policy.check("write_file", "test.py") == ASK, "未 approved *.py 仍 ask"
+    print("PASS: always 存 pattern，同类免问、异类仍 ask")
+
+# lesson9
+def test_permission_findlast_priority():
+    """后出现的规则优先级更高（findLast 语义）"""
+    policy = PermissionPolicy({"write_file": "ASK"})
+    policy.approve("write_file", "*")
+    assert policy.check("write_file", "anything") == ALLOW, "approved 追加在末尾应覆盖 ask"
+    print("PASS: findLast 后出现规则优先级更高")
+
+
 if __name__ == "__main__":
     test_calculate()
     test_calculate_invalid()
@@ -196,3 +252,9 @@ if __name__ == "__main__":
     test_list_dir()
     test_grep()
     test_grep_no_match()
+    # lesson9
+    test_permission_deny()
+    test_permission_pattern_allow()
+    test_permission_pattern_deny()
+    test_permission_always_pattern()
+    test_permission_findlast_priority()

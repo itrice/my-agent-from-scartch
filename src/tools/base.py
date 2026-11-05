@@ -6,7 +6,7 @@ The executor checks permissions before calling a handler and returns handler err
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from tools.permission import PermissionGate
+from permission import PermissionGate
 
 # ==========================
 # 1. Tool Definition
