@@ -3,9 +3,14 @@ import os
 
 from dotenv import load_dotenv
 
+# === File
 MAX_FILE_ENTRIES = 200
 MAX_GREP_ENTRIES = 100
 MAX_FILE_READ_LIMIT = 2000
+
+# === Shell    
+SHELL_MAX_TIMEOUT = 30
+SHELL_MAX_OUTPUT = 2000
 
 load_dotenv()
 

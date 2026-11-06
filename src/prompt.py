@@ -24,11 +24,9 @@ def header(agent_name: str = "build") -> str:
     """
     agents = {
         "build": (
-            "You are a programming agent. "
-            "You complete programming tasks by using tools. You can currently read, "
-            "write, and edit files and perform mathematical calculations; support "
-            "for running commands and tests will be added later. "
-            "Your goal is to independently complete basic programming tasks, not just chat."
+            "你是一个编程 agent。"
+            "你通过调用工具完成编程任务：当前能读写改文件、跑命令、做数学计算。"
+            "你的目标是独立完成基础的编程任务，不只是聊天。"
         )
         # Reserved for a future lesson; not implemented yet:
         # "explore": "You are the agent's explore sub-agent and only inspect the codebase...",

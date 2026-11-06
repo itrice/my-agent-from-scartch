@@ -31,6 +31,16 @@ PERMISSION_RULES = {
     "grep": ALLOW,  # 只读，放行
     "write_file": ASK,  # 有副作用，每次问一下
     "edit_file": ASK,  # 有副作用，同 write_file
+    "run_shell": {
+        "git *": ALLOW,  # git 操作放行
+        "python *": ALLOW,  # python 脚本/测试放行
+        "pip *": ALLOW,  # pip 安装放行
+        "ls *": ALLOW,  # 只读命令放行
+        "ls": ALLOW,  # 只读命令放行
+        "cat *": ALLOW,  # 只读命令放行
+        "echo *": ALLOW,  # 只读命令放行
+        "*": ASK,  # 其他命令每次问
+    },
 }
 
 
@@ -67,7 +77,11 @@ class PermissionPolicy:
                 ruleset.append(
                     {"permission": key, "pattern": "*", "action": value})
             elif isinstance(value, dict):
-                for pattern, action in value.items():
+                # "*" 排最前（优先级最低），具体模式排后面（优先级更高）
+                # findLast 从后往前找，先碰具体模式，匹配不到才落到 "*" 兜底
+                # true-> last, false-> first
+                items = sorted(value.items(), key=lambda kv: kv[0] != "*")
+                for pattern, action in items:
                     ruleset.append(
                         {"permission": key, "pattern": pattern, "action": action})
             else:
@@ -87,7 +101,6 @@ class PermissionPolicy:
             if fnmatch.fnmatch(tool_name, rule["permission"]) and fnmatch.fnmatch(pattern, rule["pattern"]):
                 return rule["action"]
         return ASK
-
 
     def approve(self, tool_name, pattern: str = "*"):
         """用户选 'always' 时调用，存 (tool_name, pattern) 到 approved。
